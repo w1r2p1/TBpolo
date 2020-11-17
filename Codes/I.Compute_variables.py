@@ -1,4 +1,6 @@
-''' Compute predictive variables from the initial raw dataset'''
+''' Compute predictive variables from the initial raw dataset, you can then use these variables for price forecasting through ML/DL models (possibly after scaling / PCA / ...)
+
+See https://seb943.github.io/Data/Paper_CreatingATradingBot.pdf for complete report'''
 
 
 import os
