@@ -27,7 +27,7 @@ fees = 0.00125 # transaction fees : 0.125% for example
 
 list_nPCs = [10, 20, 30, 40]
 
-def compute_earnings_loss(stoploss, takeprofit, fees = 0.0009):
+def compute_earnings_loss(stoploss, takeprofit, fees):
     '''Compute earnings and loss with given fees, stoploss, takeprofit'''
     win = (1-fees)*(1+takeprofit)*(1-fees) -1
     loss = (1-fees)*(1-stoploss)*(1-fees) -1
@@ -44,7 +44,7 @@ testset['preds'] = (clf.predict(testset_final.iloc[:, :nPCs]) > 0.5)*1
 testset['proba1'] = clf.predict(testset_final.iloc[:, :nPCs])
 
 # Compute earnings column
-a = compute_earnings_loss(stoploss, takeprofit, fees = 0.0009)
+a = compute_earnings_loss(stoploss, takeprofit, fees)
 testset['EarningsBullish'] = (testset['preds'] == testset['result'])*a[0] + (testset['preds'] != testset['result'])*a[1]
 
 # keep only the timesteps in which the model predicts a bullish trend
@@ -52,7 +52,7 @@ testset1 = testset[testset['preds'] == 1].copy()
 
 # Now plot our trading strategy
 plt.plot(pd.to_datetime(testset1['date']), np.cumsum(testset1['EarningsBullish']))
-plt.title('Best model over the testset, \n ROI = {} %'.format(100*np.mean(testset1['EarningsBullish'])))
+plt.title('Best model over the testset \n ROI = {} %'.format(100*np.mean(testset1['EarningsBullish'])))
 plt.xlabel('Date')
 plt.xlabel('Cumulative Earnings')
 plt.show()
@@ -93,7 +93,7 @@ with open("./Models/DL_model_{}PC_stoploss{}_takeprofit{}.pkl".format(nPCs, stop
 # Compute predictions on validation_set
 validation_set['preds'] = (clf.predict(validation_set_final.iloc[:, :nPCs]) > 0.5)*1
 validation_set['proba1'] = clf.predict(validation_set_final.iloc[:, :nPCs])
-a = compute_earnings_loss(stoploss, takeprofit, fees = 0.0009)
+a = compute_earnings_loss(stoploss, takeprofit, fees)
 validation_set['EarningsBullish'] = (validation_set['preds'] == validation_set['result'])*a[0] + (validation_set['preds'] != validation_set['result'])*a[1]
 
 # Compute recapitulative tables over all models
@@ -111,7 +111,7 @@ testset['preds'] = (clf.predict(testset_final.iloc[:, :nPCs]) > 0.5)*1
 testset['proba1'] = clf.predict(testset_final.iloc[:, :nPCs])
 
 # Compute earnings column
-a = compute_earnings_loss(stoploss, takeprofit, fees = 0.0009)
+a = compute_earnings_loss(stoploss, takeprofit, fees)
 testset['EarningsBullish'] = (testset['preds'] == testset['result'])*a[0] + (testset['preds'] != testset['result'])*a[1]
 
 # keep only the timesteps in which the model predicts a bullish trend
