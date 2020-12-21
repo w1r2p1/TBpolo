@@ -12,17 +12,22 @@ import pickle as pk
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 ################### (a) Load previously built datasets
-trainset_final = pd.read_csv('./Data/TrainSet_final.csv')
-trainset = pd.read_csv('./Data/TrainSet.csv')
-testset_final = pd.read_csv('./Data/TestSet_final.csv')
-testset = pd.read_csv('./Data/TestSet.csv')
+trainset_final = pd.read_csv('./Data/TrainSet_final_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
+trainset = pd.read_csv('./Data/TrainSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
+
+validation_set_final = pd.read_csv('./Data/ValidationSet_final_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
+validation_set = pd.read_csv('./Data/ValidationSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
+
+testset_final = pd.read_csv('./Data/TestSet_final_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
+testset = pd.read_csv('./Data/TestSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
 
 stoploss = 0.02
 takeprofit = 0.05
 fees = 0.0009 # transaction fees : 0.09% for example
 
+list_nPCs = [10, 20, 30, 40]
 
-def simulate_expectancy(p, stoploss, takeprofit, fees = 0.0009):
+def simulate_expectancy(stoploss, takeprofit, fees = 0.0009):
     '''Compute earnings and loss with given fees, stoploss, takeprofit'''
     win = (1-fees)*(1+takeprofit)*(1-fees) -1
     loss = (1-fees)*(1-stoploss)*(1-fees) -1
@@ -32,24 +37,91 @@ def simulate_expectancy(p, stoploss, takeprofit, fees = 0.0009):
 recap = pd.read_csv('Comparative_All_models.csv').sort_values('Accuracy', ascending = False)
 nPCs = recap['nPCs'].iloc[0]
 
-with open("./Models/DL_model_{}PC.pkl".format(nPCs), 'rb') as f:
+with open("./Models/DL_model_{}PC_stoploss{}_takeprofit{}.pkl".format(nPCs, stoploss, takeprofit), 'rb') as f:
     clf = pk.load(f)
 # Compute predictions on testset
 testset['preds'] = (clf.predict(testset_final.iloc[:, :nPCs]) > 0.5)*1
-# keep only the timesteps in which the model predicts a bullish trend
-testset = testset[testset['preds'] == 1]
+testset['proba1'] = clf.predict(testset_final.iloc[:, :nPCs])
 
 # Compute earnings column
-a = simulate_expectancy(p = 0, stoploss, takeprofit, fees = )
-trades['EarningsBullish'] = (testset['preds'] == testset['result'])*a[0] + (testset['preds'] != testset['result'])*a[1]
+a = simulate_expectancy(stoploss, takeprofit, fees = 0.0009)
+testset['EarningsBullish'] = (testset['preds'] == testset['result'])*a[0] + (testset['preds'] != testset['result'])*a[1]
+
+# keep only the timesteps in which the model predicts a bullish trend
+testset1 = testset[testset['preds'] == 1].copy()
 
 # Now plot our trading strategy
-plt.plot(testset['date'], np.cumsum(testset['EarningsBullish']))
-plt.title('ROI = {} %'.format(np.mean(testset['EarningsBullish'])))
+plt.plot(pd.to_datetime(testset1['date']), np.cumsum(testset1['EarningsBullish']))
+plt.title('Best strategy over the testset, \n ROI = {} %'.format(100*np.mean(testset1['EarningsBullish'])))
 plt.xlabel('Date')
 plt.xlabel('Cumulative Earnings')
+plt.show()
+
+# Display the entry points
+plt.plot(pd.to_datetime(testset['date']), testset['close'])
+plt.scatter(pd.to_datetime(testset1['date']), testset1['close'], c = (testset1['EarningsBullish']>0))
+plt.title('Entry points')
+plt.show()
 
 
 
+################### (c) More evolved strategy : look for the threshold to limit to the cases where p>a (for the best model)
+def table_recap(df, stoploss, takeprofit, nPCs, columnA = 'proba1', columnB = 'EarningsBullish'):
+    ''' Summarize the strategy by steps of 0.05, depending on which column (i.e. strategy)
+    we choose'''
+    recap = pd.DataFrame(np.zeros((int(10), 0)))
+    recap['stoploss'] = stoploss
+    recap['takeprofit'] = takeprofit
+    recap['nPCs'] = nPCs
+    recap['Min'] = [0.5 + k*0.05 for k in range(10)]
+    recap['Max'] = 1
+    recap['ROI%'] = 0
+    recap['nTrades'] = 0
+    for i in range(len(recap['Min'])):
+        min, max = recap['Min'].iloc[i], recap['Max'].iloc[i]
+        df2 = df[(df[columnA] > min) & (df[columnA] < max)]
+        recap['ROI%'].iloc[i] = 100 * np.mean(df2[columnB])
+        recap['nTrades'].iloc[i] = df2.shape[0]
+
+    return(recap)
+
+# Compute recapitulative tables over all models
+recap = table_recap(validation_set, stoploss, takeprofit, list_nPCs[0])
+for nPCs in list_nPCs[1:]:
+    recap1 = table_recap(validation_set, stoploss, takeprofit, nPCs)
+    recap.append(recap1)
+recap.to_csv('Recapitulative_result_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
 
 
+# And display the most profitable
+recap = recap.sort_values('ROI%', ascending = False)
+recap = recap[recap['nTrades'] > 50] # let's say we want strategies with at least 50 trades over the validation set
+nPCs, min, max = recap['nPCs'].iloc[0], recap['Min'].iloc[0], recap['Max'].iloc[0]
+
+# Compute predictions on testset
+with open("./Models/DL_model_{}PC_stoploss{}_takeprofit{}.pkl".format(nPCs, stoploss, takeprofit), 'rb') as f:
+    clf = pk.load(f)
+testset['preds'] = (clf.predict(testset_final.iloc[:, :nPCs]) > 0.5)*1
+testset['proba1'] = clf.predict(testset_final.iloc[:, :nPCs])
+
+# Compute earnings column
+a = simulate_expectancy(stoploss, takeprofit, fees = 0.0009)
+testset['EarningsBullish'] = (testset['preds'] == testset['result'])*a[0] + (testset['preds'] != testset['result'])*a[1]
+
+# keep only the timesteps in which the model predicts a bullish trend
+testset2 = testset[testset['preds'] == 1].copy()
+
+# let's say we seek for strategies that display at least n trades over the testing period
+testset2 = testset[(testset['proba1'] > min) & (testset['proba1'] < max)].copy()
+
+# Now plot our trading strategy
+plt.plot(pd.to_datetime(testset2['date']), np.cumsum(testset2['EarningsBullish']))
+plt.title('ROI = {} %'.format(100*np.mean(testset2['EarningsBullish'])))
+plt.xlabel('Date')
+plt.xlabel('Cumulative Earnings')
+plt.show()
+
+# Display the entry points
+plt.plot(pd.to_datetime(testset['date']), testset['close'])
+plt.scatter(pd.to_datetime(testset2['date']), testset2['close'], c = (testset2['EarningsBullish']>0))
+plt.show()

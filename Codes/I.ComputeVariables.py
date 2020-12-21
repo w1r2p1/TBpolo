@@ -7,16 +7,18 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 # Load the data, define test set and train set
 os.chdir("C:\\Users\\Utilisateur\\Desktop\\Crypto\\Data")
-df = pd.read_csv('./Data/Dataset_USDT_BTC.csv')
+df = pd.read_csv('./Data/Dataset_USDT_XMR.csv')
 df["date"] = pd.to_datetime(df["date"])
 
-# Keep only 5 base columns and the date
+# Keep only 5 basic information + the date
 df = df[['close', 'date', 'high', 'low', 'open', 'volume']]
 
 # Define limit between train set and testset
-date_lim = '2019-03-21 12:00:00'
+start_validation = '2018-03-21 12:00:00'
+start_test = '2019-03-21 12:00:00'
 stoploss = 0.02
 takeprofit = 0.05
+
 #################### I - Define standard functions ###############################
 def compute_sma(df, window, colname):
     '''Computes Simple Moving Average column on a dataframe'''
@@ -91,20 +93,23 @@ def check_outcome(df, line, stoploss, takeprofit):
 def compute_result(df, stoploss, takeprofit):
     df['result'] = 0
     for i in range(df["close"].size):
-        print(i)
+        print(i, '/', df.shape[0])
         df['result'].iloc[i] = check_outcome(df, i, stoploss, takeprofit)
     return(df)
 
 df = compute_result(df, stoploss, takeprofit)
 df = df[df['result']>=0] # Only keep observations where we also have the result
-df.to_csv('./Data/DatasetWithVariablesAndY.csv', index = False)
+df.to_csv('./Data/DatasetWithVariablesAndY_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit), index = False)
 
 #################### IV - Apply PCA and save results ##############################
-# First we define the test set and the trainset. This is important in this step to avoid causality issues.
-trainset = df[df['date'] < date_lim]
-testset = df[df['date'] > date_lim]
-trainset.to_csv('./Data/TrainSet.csv', index = False)
-testset.to_csv('./Data/TestSet.csv', index = False)
+# First we define the trainset, validation set, testset. This is important in this step to avoid causality issues.
+trainset = df[df['date'] < start_validation]
+validation_set = df[(df['date'] >= start_validation) & (df['date'] < start_test)]
+testset = df[df['date'] > start_test]
+
+trainset.to_csv('./Data/TrainSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit), index = False)
+validation_set.to_csv('./Data/ValidationSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit), index = False)
+testset.to_csv('./Data/TestSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit), index = False)
 
 # (i) Scale the variables
 scale_fct = StandardScaler()
@@ -123,7 +128,9 @@ pk.dump(pca_scaler, open('./Models/pca_scaler.pkl','wb'))
 
 # (iv) Save testset and trainset versions we will use for training
 trainset_final = pd.DataFrame(pca_scaler.transform(pca.transform(scale_fct.transform(trainset.drop('date', 1).drop('result', 1)))))
+validation_set_final = pd.DataFrame(pca_scaler.transform(pca.transform(scale_fct.transform(validation_set.drop('date', 1).drop('result', 1)))))
 testset_final = pd.DataFrame(pca_scaler.transform(pca.transform(scale_fct.transform(testset.drop('date', 1).drop('result', 1)))))
 
-trainset_final.to_csv('./Data/TrainSet_final.csv', index = False)
-testset_final.to_csv('./Data/TestSet_final.csv', index = False)
+trainset_final.to_csv('./Data/TrainSet_final_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit), index = False)
+validation_set_final.to_csv('./Data/ValidationSet_final_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit), index = False)
+testset_final.to_csv('./Data/TestSet_final_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit), index = False)
