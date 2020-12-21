@@ -1,4 +1,4 @@
-# III. Assess accuracy and backtest
+# Article III : Assess accuracy and backtest
 '''Here we look at every model and seek for the most profitable one'''
 import matplotlib.pyplot as plt
 
@@ -21,20 +21,20 @@ validation_set = pd.read_csv('./Data/ValidationSet_stoploss{}_takeprofit{}.csv'.
 testset_final = pd.read_csv('./Data/TestSet_final_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
 testset = pd.read_csv('./Data/TestSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
 
-stoploss = 0.02
-takeprofit = 0.05
-fees = 0.0009 # transaction fees : 0.09% for example
+stoploss = 0.05
+takeprofit = 0.1
+fees = 0.00125 # transaction fees : 0.09% for example
 
 list_nPCs = [10, 20, 30, 40]
 
-def simulate_expectancy(stoploss, takeprofit, fees = 0.0009):
+def compute_earnings_loss(stoploss, takeprofit, fees = 0.0009):
     '''Compute earnings and loss with given fees, stoploss, takeprofit'''
     win = (1-fees)*(1+takeprofit)*(1-fees) -1
     loss = (1-fees)*(1-stoploss)*(1-fees) -1
     return(win, loss)
 
 #################### (b) Basic strategy : pick the best model and bet on bullish trends over the testset
-recap = pd.read_csv('Comparative_All_models.csv').sort_values('Accuracy', ascending = False)
+recap = pd.read_csv('Comparative_All_models_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit)).sort_values('Accuracy', ascending = False)
 nPCs = recap['nPCs'].iloc[0]
 
 with open("./Models/DL_model_{}PC_stoploss{}_takeprofit{}.pkl".format(nPCs, stoploss, takeprofit), 'rb') as f:
@@ -44,7 +44,7 @@ testset['preds'] = (clf.predict(testset_final.iloc[:, :nPCs]) > 0.5)*1
 testset['proba1'] = clf.predict(testset_final.iloc[:, :nPCs])
 
 # Compute earnings column
-a = simulate_expectancy(stoploss, takeprofit, fees = 0.0009)
+a = compute_earnings_loss(stoploss, takeprofit, fees = 0.0009)
 testset['EarningsBullish'] = (testset['preds'] == testset['result'])*a[0] + (testset['preds'] != testset['result'])*a[1]
 
 # keep only the timesteps in which the model predicts a bullish trend
@@ -52,7 +52,7 @@ testset1 = testset[testset['preds'] == 1].copy()
 
 # Now plot our trading strategy
 plt.plot(pd.to_datetime(testset1['date']), np.cumsum(testset1['EarningsBullish']))
-plt.title('Best strategy over the testset, \n ROI = {} %'.format(100*np.mean(testset1['EarningsBullish'])))
+plt.title('Best model over the testset, \n ROI = {} %'.format(100*np.mean(testset1['EarningsBullish'])))
 plt.xlabel('Date')
 plt.xlabel('Cumulative Earnings')
 plt.show()
@@ -60,7 +60,7 @@ plt.show()
 # Display the entry points
 plt.plot(pd.to_datetime(testset['date']), testset['close'])
 plt.scatter(pd.to_datetime(testset1['date']), testset1['close'], c = (testset1['EarningsBullish']>0))
-plt.title('Entry points')
+plt.title('Entry points \n Yellow = Win, Blue = Loss')
 plt.show()
 
 
@@ -85,27 +85,33 @@ def table_recap(df, stoploss, takeprofit, nPCs, columnA = 'proba1', columnB = 'E
 
     return(recap)
 
+# Load best model
+nPCs = list_nPCs[0]
+with open("./Models/DL_model_{}PC_stoploss{}_takeprofit{}.pkl".format(nPCs, stoploss, takeprofit), 'rb') as f:
+    clf = pk.load(f)
+
+# Compute predictions on validation_set
+validation_set['preds'] = (clf.predict(validation_set_final.iloc[:, :nPCs]) > 0.5)*1
+validation_set['proba1'] = clf.predict(validation_set_final.iloc[:, :nPCs])
+a = compute_earnings_loss(stoploss, takeprofit, fees = 0.0009)
+validation_set['EarningsBullish'] = (validation_set['preds'] == validation_set['result'])*a[0] + (validation_set['preds'] != validation_set['result'])*a[1]
+
 # Compute recapitulative tables over all models
-recap = table_recap(validation_set, stoploss, takeprofit, list_nPCs[0])
-for nPCs in list_nPCs[1:]:
-    recap1 = table_recap(validation_set, stoploss, takeprofit, nPCs)
-    recap.append(recap1)
-recap.to_csv('Recapitulative_result_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
+recap = table_recap(validation_set, stoploss, takeprofit, nPCs)
+recap.to_csv('./Results/Recapitulative_result_stoploss{}_takeprofit{}_{}PCs.csv'.format(stoploss, takeprofit, nPCs))
 
 
 # And display the most profitable
 recap = recap.sort_values('ROI%', ascending = False)
 recap = recap[recap['nTrades'] > 50] # let's say we want strategies with at least 50 trades over the validation set
-nPCs, min, max = recap['nPCs'].iloc[0], recap['Min'].iloc[0], recap['Max'].iloc[0]
+min, max = recap['Min'].iloc[0], recap['Max'].iloc[0]
 
 # Compute predictions on testset
-with open("./Models/DL_model_{}PC_stoploss{}_takeprofit{}.pkl".format(nPCs, stoploss, takeprofit), 'rb') as f:
-    clf = pk.load(f)
 testset['preds'] = (clf.predict(testset_final.iloc[:, :nPCs]) > 0.5)*1
 testset['proba1'] = clf.predict(testset_final.iloc[:, :nPCs])
 
 # Compute earnings column
-a = simulate_expectancy(stoploss, takeprofit, fees = 0.0009)
+a = compute_earnings_loss(stoploss, takeprofit, fees = 0.0009)
 testset['EarningsBullish'] = (testset['preds'] == testset['result'])*a[0] + (testset['preds'] != testset['result'])*a[1]
 
 # keep only the timesteps in which the model predicts a bullish trend
@@ -124,4 +130,5 @@ plt.show()
 # Display the entry points
 plt.plot(pd.to_datetime(testset['date']), testset['close'])
 plt.scatter(pd.to_datetime(testset2['date']), testset2['close'], c = (testset2['EarningsBullish']>0))
+plt.title('Entry points \n Yellow = Win, Blue = Loss')
 plt.show()

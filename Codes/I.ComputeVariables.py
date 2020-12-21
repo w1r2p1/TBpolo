@@ -1,4 +1,4 @@
-# I. Compute predictive variables for financial forecasting
+# Article I :  Compute predictive variables for financial forecasting
 import os
 import pandas as pd
 import numpy as np
@@ -7,7 +7,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 # Load the data, define test set and train set
 os.chdir("C:\\Users\\Utilisateur\\Desktop\\Crypto\\Data")
-df = pd.read_csv('./Data/Dataset_USDT_XMR.csv')
+df = pd.read_csv('./Data/USDT_BTC_Poloniex_20022015_21122020_7200.csv')
 df["date"] = pd.to_datetime(df["date"])
 
 # Keep only 5 basic information + the date
@@ -15,9 +15,17 @@ df = df[['close', 'date', 'high', 'low', 'open', 'volume']]
 
 # Define limit between train set and testset
 start_validation = '2018-03-21 12:00:00'
-start_test = '2019-03-21 12:00:00'
-stoploss = 0.02
-takeprofit = 0.05
+start_test = '2019-12-21 12:00:00'
+stoploss = 0.05
+takeprofit = 0.1
+
+# Creating subfolders if they don't exist ...
+if not os.path.exists('./Data'):
+        os.makedirs('./Data')
+if not os.path.exists('./Models'):
+        os.makedirs('./Models')
+if not os.path.exists('./Results'):
+        os.makedirs('./Results')
 
 #################### I - Define standard functions ###############################
 def compute_sma(df, window, colname):
@@ -93,7 +101,8 @@ def check_outcome(df, line, stoploss, takeprofit):
 def compute_result(df, stoploss, takeprofit):
     df['result'] = 0
     for i in range(df["close"].size):
-        print(i, '/', df.shape[0])
+        if i%500 == 0:
+            print(i, '/', df.shape[0])
         df['result'].iloc[i] = check_outcome(df, i, stoploss, takeprofit)
     return(df)
 
@@ -110,6 +119,14 @@ testset = df[df['date'] > start_test]
 trainset.to_csv('./Data/TrainSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit), index = False)
 validation_set.to_csv('./Data/ValidationSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit), index = False)
 testset.to_csv('./Data/TestSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit), index = False)
+
+import matplotlib.pyplot as plt
+# Display the splitting
+plt.plot(pd.to_datetime(trainset['date']), trainset['close'], c = 'orange')
+plt.plot(pd.to_datetime(validation_set['date']), validation_set['close'], c = 'b')
+plt.plot(pd.to_datetime(testset['date']), testset['close'], c = 'g')
+plt.title('Repartition between trainset, validation set, and test set')
+plt.show()
 
 # (i) Scale the variables
 scale_fct = StandardScaler()

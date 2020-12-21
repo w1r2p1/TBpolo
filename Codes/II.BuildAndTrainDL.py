@@ -1,4 +1,4 @@
-# II. Build and train a DL model for price forecasting
+# Article II : Build and train a DL model for price forecasting
 from keras.models import Sequential
 from keras.layers import Dense
 
@@ -10,8 +10,8 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 list_nPCs = [10, 20, 30, 40]
-stoploss = 0.02
-takeprofit = 0.05
+stoploss = 0.05
+takeprofit = 0.1
 
 # (a) Load previously built datasets
 trainset_final = pd.read_csv('./Data/TrainSet_final_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
@@ -23,7 +23,7 @@ validation_set = pd.read_csv('./Data/ValidationSet_stoploss{}_takeprofit{}.csv'.
 testset_final = pd.read_csv('./Data/TestSet_final_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
 testset = pd.read_csv('./Data/TestSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
 
-# (b) Build and train several models differentamounts of PCs
+# (b) Build and train several models different amounts of PCs
 for nPCs in list_nPCs:
     print(nPCs)
     X = trainset_final.iloc[:, :nPCs]
@@ -57,9 +57,12 @@ for nPCs in list_nPCs:
     # Compute predictions on testset
     preds = (clf.predict(validation_set_final.iloc[:, :nPCs]) > 0.5)*1
 
-    accuracies.append(np.mean(preds == list(validation_set['result'])))
+    # Assess accuracy on Bullish preidctions only (because we will only perform Bullish trades IRL)
+    validation_set1 = validation_set[preds == 1].copy()
+
+    accuracies.append(np.mean(preds == list(validation_set1['result'])))
     nPCs_list.append(nPCs)
 
 recap = pd.DataFrame({'nPCs' : list(nPCs_list), 'Accuracy' : (list(accuracies))})
-recap.to_csv('Comparative_All_models_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit), index = False)
+recap.to_csv('./Results/Comparative_All_models_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit), index = False)
 
