@@ -23,7 +23,7 @@ testset = pd.read_csv('./Data/TestSet_stoploss{}_takeprofit{}.csv'.format(stoplo
 
 stoploss = 0.05
 takeprofit = 0.1
-fees = 0.00125 # transaction fees : 0.09% for example
+fees = 0.00125 # transaction fees : 0.125% for example
 
 list_nPCs = [10, 20, 30, 40]
 
