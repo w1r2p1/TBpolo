@@ -16,7 +16,7 @@ df["date"] = pd.to_datetime(df["date"])
 df = df[['close', 'date', 'high', 'low', 'open', 'volume']]
 
 # Define limit between train set and testset
-start_validation = '2018-03-21 12:00:00'
+start_validation = '2018-12-21 12:00:00'
 start_test = '2019-12-21 12:00:00'
 stoploss = 0.05
 takeprofit = 0.1
