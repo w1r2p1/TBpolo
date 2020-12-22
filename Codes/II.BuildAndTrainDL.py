@@ -8,19 +8,16 @@ import pickle as pk
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-list_nPCs = [10, 20, 30, 40]
+list_nPCs = [10, 15, 20, 25, 30, 35, 40]
 stoploss = 0.05
 takeprofit = 0.1
 
-# (a) Load previously built datasets
+# (a) Load previously built datasets : we just need train sets and validation sets here
 trainset_final = pd.read_csv('./Data/TrainSet_final_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
 trainset = pd.read_csv('./Data/TrainSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
 
 validation_set_final = pd.read_csv('./Data/ValidationSet_final_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
 validation_set = pd.read_csv('./Data/ValidationSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
-
-testset_final = pd.read_csv('./Data/TestSet_final_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
-testset = pd.read_csv('./Data/TestSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
 
 # (b) Build and train several models different amounts of PCs
 for nPCs in list_nPCs:
