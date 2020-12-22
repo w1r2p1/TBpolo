@@ -11,7 +11,16 @@ import numpy as np
 import pickle as pk
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+
+from scipy.stats import ttest_1samp
+
 ################### (a) Load previously built datasets
+stoploss = 0.05
+takeprofit = 0.1
+fees = 0.00125 # transaction fees : 0.125% for example
+
+list_nPCs = [10, 20, 30, 40]
+
 trainset_final = pd.read_csv('./Data/TrainSet_final_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
 trainset = pd.read_csv('./Data/TrainSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
 
@@ -21,11 +30,6 @@ validation_set = pd.read_csv('./Data/ValidationSet_stoploss{}_takeprofit{}.csv'.
 testset_final = pd.read_csv('./Data/TestSet_final_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
 testset = pd.read_csv('./Data/TestSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
 
-stoploss = 0.05
-takeprofit = 0.1
-fees = 0.00125 # transaction fees : 0.125% for example
-
-list_nPCs = [10, 20, 30, 40]
 
 def compute_earnings_loss(stoploss, takeprofit, fees):
     '''Compute earnings and loss with given fees, stoploss, takeprofit'''
@@ -33,37 +37,52 @@ def compute_earnings_loss(stoploss, takeprofit, fees):
     loss = (1-fees)*(1-stoploss)*(1-fees) -1
     return(win, loss)
 
+def predict_and_backtest_bullish(df, df_final, model, stoploss, takeprofit, fees, plotting = True):
+    # Compute predictions on testset
+    df['preds'] = (clf.predict(df_final.iloc[:, :nPCs]) > 0.5)*1
+    df['proba1'] = clf.predict(df_final.iloc[:, :nPCs])
+
+    # keep only the timesteps in which the model predicts a bullish trend
+    testset1 = df[df['preds'] == 1].copy()
+
+    # Compute earnings column
+    a = compute_earnings_loss(stoploss, takeprofit, fees)
+    testset1['EarningsBullish'] = (testset1['preds'] == testset1['result'])*a[0] + (testset1['preds'] != testset1['result'])*a[1]
+
+    if plotting:
+        # Now plot our trading strategy
+        plt.plot(pd.to_datetime(testset1['date']), np.cumsum(testset1['EarningsBullish']))
+        plt.title('Best model over the testset \n ROI = {} %'.format(100*np.mean(testset1['EarningsBullish'])))
+        plt.xlabel('Date')
+        plt.xlabel('Cumulative Earnings')
+        plt.show()
+
+        # Display the entry points
+        plt.plot(pd.to_datetime(df['date']), df['close'])
+        plt.scatter(pd.to_datetime(testset1['date']), testset1['close'], c = (testset1['EarningsBullish']>0))
+        plt.title('Entry points \n Yellow = Win, Blue = Loss')
+        plt.show()
+
+    return(testset1)
+
 #################### (b) Basic strategy : pick the best model and bet on bullish trends over the testset
 recap = pd.read_csv('Comparative_All_models_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit)).sort_values('Accuracy', ascending = False)
 nPCs = recap['nPCs'].iloc[0]
 
 with open("./Models/DL_model_{}PC_stoploss{}_takeprofit{}.pkl".format(nPCs, stoploss, takeprofit), 'rb') as f:
     clf = pk.load(f)
-# Compute predictions on testset
-testset['preds'] = (clf.predict(testset_final.iloc[:, :nPCs]) > 0.5)*1
-testset['proba1'] = clf.predict(testset_final.iloc[:, :nPCs])
 
-# Compute earnings column
+testset1 = predict_and_backtest_bullish(testset, testset_final, clf, stoploss, takeprofit, fees, plotting = True)
+
+# Assess the performance by comparing to if we always traded bullish blindly over the period
 a = compute_earnings_loss(stoploss, takeprofit, fees)
-testset['EarningsBullish'] = (testset['preds'] == testset['result'])*a[0] + (testset['preds'] != testset['result'])*a[1]
+testset_benchmark = testset.copy()
+testset_benchmark['EarningsBullish'] = (testset['result'] == 1)*a[0] + (testset['result'] == 0)*a[1]
+avg_return_benchmark = np.mean(testset_benchmark['EarningsBullish'])
 
-# keep only the timesteps in which the model predicts a bullish trend
-testset1 = testset[testset['preds'] == 1].copy()
-
-# Now plot our trading strategy
-plt.plot(pd.to_datetime(testset1['date']), np.cumsum(testset1['EarningsBullish']))
-plt.title('Best model over the testset \n ROI = {} %'.format(100*np.mean(testset1['EarningsBullish'])))
-plt.xlabel('Date')
-plt.xlabel('Cumulative Earnings')
-plt.show()
-
-# Display the entry points
-plt.plot(pd.to_datetime(testset['date']), testset['close'])
-plt.scatter(pd.to_datetime(testset1['date']), testset1['close'], c = (testset1['EarningsBullish']>0))
-plt.title('Entry points \n Yellow = Win, Blue = Loss')
-plt.show()
-
-
+# Now let's look at our approach's performance and std
+p_value = ttest_1samp(testset1['EarningsBullish'], popmean = avg_return_benchmark)[1]
+print('Our model has an average ROI of {} %, while trading blindly bullish over the same period yielded a ROI of {} %, when we perform statistical testing of difference there is a p-value of {}.'.format(100*np.mean(testset1['EarningsBullish']), 100*avg_return_benchmark, p_value))
 
 ################### (c) More evolved strategy : look for the threshold to limit to the cases where p>a (for the best model)
 def table_recap(df, stoploss, takeprofit, nPCs, columnA = 'proba1', columnB = 'EarningsBullish'):
@@ -85,6 +104,7 @@ def table_recap(df, stoploss, takeprofit, nPCs, columnA = 'proba1', columnB = 'E
 
     return(recap)
 
+# (i) Identify best threshold
 # Load best model
 nPCs = list_nPCs[0]
 with open("./Models/DL_model_{}PC_stoploss{}_takeprofit{}.pkl".format(nPCs, stoploss, takeprofit), 'rb') as f:
@@ -100,29 +120,20 @@ validation_set['EarningsBullish'] = (validation_set['preds'] == validation_set['
 recap = table_recap(validation_set, stoploss, takeprofit, nPCs)
 recap.to_csv('./Results/Recapitulative_result_stoploss{}_takeprofit{}_{}PCs.csv'.format(stoploss, takeprofit, nPCs))
 
-
 # And display the most profitable
 recap = recap.sort_values('ROI%', ascending = False)
 recap = recap[recap['nTrades'] > 50] # let's say we want strategies with at least 50 trades over the validation set
 min, max = recap['Min'].iloc[0], recap['Max'].iloc[0]
 
-# Compute predictions on testset
-testset['preds'] = (clf.predict(testset_final.iloc[:, :nPCs]) > 0.5)*1
-testset['proba1'] = clf.predict(testset_final.iloc[:, :nPCs])
 
-# Compute earnings column
-a = compute_earnings_loss(stoploss, takeprofit, fees)
-testset['EarningsBullish'] = (testset['preds'] == testset['result'])*a[0] + (testset['preds'] != testset['result'])*a[1]
-
-# keep only the timesteps in which the model predicts a bullish trend
-testset2 = testset[testset['preds'] == 1].copy()
-
-# let's say we seek for strategies that display at least n trades over the testing period
-testset2 = testset[(testset['proba1'] > min) & (testset['proba1'] < max)].copy()
+# (ii) Now that we have identified the best threshold, filter the predictions
+# ...Finally : we plot our strategy
+testset2 = predict_and_backtest_bullish(testset, testset_final, clf, stoploss, takeprofit, fees, plotting = False)
+testset2 = testset2[(testset2['proba1'] > min) & (testset2['proba1'] < max)].copy()
 
 # Now plot our trading strategy
 plt.plot(pd.to_datetime(testset2['date']), np.cumsum(testset2['EarningsBullish']))
-plt.title('ROI = {} %'.format(100*np.mean(testset2['EarningsBullish'])))
+plt.title('Best model over the testset \n ROI = {} %'.format(100*np.mean(testset2['EarningsBullish'])))
 plt.xlabel('Date')
 plt.xlabel('Cumulative Earnings')
 plt.show()
@@ -132,3 +143,13 @@ plt.plot(pd.to_datetime(testset['date']), testset['close'])
 plt.scatter(pd.to_datetime(testset2['date']), testset2['close'], c = (testset2['EarningsBullish']>0))
 plt.title('Entry points \n Yellow = Win, Blue = Loss')
 plt.show()
+
+# (iii) Assess the performance by comparing to if we always traded bullish over the period
+a = compute_earnings_loss(stoploss, takeprofit, fees)
+testset_benchmark = testset.copy()
+testset_benchmark['EarningsBullish'] = (testset['result'] == 1)*a[0] + (testset['result'] == 0)*a[1]
+avg_return_benchmark = np.mean(testset_benchmark['EarningsBullish'])
+
+# Now let's look at our approach's performance and std
+p_value = ttest_1samp(testset2['EarningsBullish'], popmean = avg_return_benchmark)[1]
+print('Our model has an average ROI of {} %, while trading blindly bullish over the same period yielded a ROI of {} %, when we perform statistical testing of difference there is a p-value of {}.'.format(100*np.mean(testset2['EarningsBullish']), 100*avg_return_benchmark, p_value))

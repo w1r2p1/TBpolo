@@ -1,7 +1,6 @@
 # Article II : Build and train a DL model for price forecasting
 from keras.models import Sequential
 from keras.layers import Dense
-
 import os
 import pandas as pd
 import numpy as np
@@ -47,7 +46,6 @@ for nPCs in list_nPCs:
 
     pk.dump(classifier, open("./Models/DL_model_{}PC_stoploss{}_takeprofit{}.pkl".format(nPCs, stoploss, takeprofit),"wb"))
 
-
 # (c) Test onto the testset : we compare all models and store results in a csv file
 accuracies, nPCs_list = [], []
 for nPCs in list_nPCs:
@@ -57,12 +55,10 @@ for nPCs in list_nPCs:
     # Compute predictions on testset
     preds = (clf.predict(validation_set_final.iloc[:, :nPCs]) > 0.5)*1
 
-    # Assess accuracy on Bullish preidctions only (because we will only perform Bullish trades IRL)
+    # Assess accuracy on Bullish predictions only (because we will only perform Bullish trades IRL) : we prioritize selectivity
     validation_set1 = validation_set[preds == 1].copy()
-
     accuracies.append(np.mean(preds == list(validation_set1['result'])))
     nPCs_list.append(nPCs)
 
 recap = pd.DataFrame({'nPCs' : list(nPCs_list), 'Accuracy' : (list(accuracies))})
 recap.to_csv('./Results/Comparative_All_models_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit), index = False)
-

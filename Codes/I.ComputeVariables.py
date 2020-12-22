@@ -5,6 +5,8 @@ import numpy as np
 import pickle as pk
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+
 # Load the data, define test set and train set
 os.chdir("C:\\Users\\Utilisateur\\Desktop\\Crypto\\Data")
 df = pd.read_csv('./Data/USDT_BTC_Poloniex_20022015_21122020_7200.csv')
@@ -120,7 +122,6 @@ trainset.to_csv('./Data/TrainSet_stoploss{}_takeprofit{}.csv'.format(stoploss, t
 validation_set.to_csv('./Data/ValidationSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit), index = False)
 testset.to_csv('./Data/TestSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit), index = False)
 
-import matplotlib.pyplot as plt
 # Display the splitting
 plt.plot(pd.to_datetime(trainset['date']), trainset['close'], c = 'orange')
 plt.plot(pd.to_datetime(validation_set['date']), validation_set['close'], c = 'b')
@@ -143,7 +144,7 @@ pca_scaler = StandardScaler()
 pca_scaler.fit(pca.transform(scale_fct.transform(trainset.drop('date', 1).drop('result', 1))))
 pk.dump(pca_scaler, open('./Models/pca_scaler.pkl','wb'))
 
-# (iv) Save testset and trainset versions we will use for training
+# (iv) Save ready-to-use versions (i.e. datasets after applying scalers and PCA)
 trainset_final = pd.DataFrame(pca_scaler.transform(pca.transform(scale_fct.transform(trainset.drop('date', 1).drop('result', 1)))))
 validation_set_final = pd.DataFrame(pca_scaler.transform(pca.transform(scale_fct.transform(validation_set.drop('date', 1).drop('result', 1)))))
 testset_final = pd.DataFrame(pca_scaler.transform(pca.transform(scale_fct.transform(testset.drop('date', 1).drop('result', 1)))))
