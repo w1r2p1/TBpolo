@@ -19,7 +19,7 @@ stoploss = 0.05
 takeprofit = 0.1
 fees = 0.00125 # transaction fees : 0.125% for example
 
-list_nPCs = [10, 20, 30, 40]
+list_nPCs = [10, 15, 20, 25, 30, 35, 40]
 
 trainset_final = pd.read_csv('./Data/TrainSet_final_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
 trainset = pd.read_csv('./Data/TrainSet_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
