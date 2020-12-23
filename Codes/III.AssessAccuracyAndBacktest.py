@@ -19,6 +19,8 @@ stoploss = 0.05
 takeprofit = 0.1
 fees = 0.00125 # transaction fees : 0.125% for example
 
+nTrades_mini = 50 # minimal number of trades we want over the test set: this is for second approach
+
 list_nPCs = [10, 15, 20, 25, 30, 35, 40]
 
 trainset_final = pd.read_csv('./Data/TrainSet_final_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit))
@@ -117,13 +119,13 @@ validation_set['proba1'] = clf.predict(validation_set_final.iloc[:, :nPCs])
 a = compute_earnings_loss(stoploss, takeprofit, fees)
 validation_set['EarningsBullish'] = (validation_set['preds'] == validation_set['result'])*a[0] + (validation_set['preds'] != validation_set['result'])*a[1]
 
-# Compute recapitulative tables over all models
+# Compute recapitulative table
 recap = table_recap(validation_set, stoploss, takeprofit, nPCs)
 recap.to_csv('./Results/Recapitulative_result_stoploss{}_takeprofit{}_{}PCs.csv'.format(stoploss, takeprofit, nPCs))
 
-# And display the most profitable
+# Pick the most profitable
 recap = recap.sort_values('ROI%', ascending = False)
-recap = recap[recap['nTrades'] > 50] # let's say we want strategies with at least 50 trades over the validation set
+recap = recap[recap['nTrades'] > nTrades_mini]
 print(recap)
 min, max = recap['Min'].iloc[0], recap['Max'].iloc[0]
 
