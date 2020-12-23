@@ -106,7 +106,8 @@ def table_recap(df, stoploss, takeprofit, nPCs, columnA = 'proba1', columnB = 'E
 
 # (i) Identify best threshold
 # Load best model
-nPCs = list_nPCs[0]
+recap = pd.read_csv('Comparative_All_models_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit)).sort_values('Accuracy', ascending = False)
+nPCs = recap['nPCs'].iloc[0]
 with open("./Models/DL_model_{}PC_stoploss{}_takeprofit{}.pkl".format(nPCs, stoploss, takeprofit), 'rb') as f:
     clf = pk.load(f)
 
@@ -123,6 +124,7 @@ recap.to_csv('./Results/Recapitulative_result_stoploss{}_takeprofit{}_{}PCs.csv'
 # And display the most profitable
 recap = recap.sort_values('ROI%', ascending = False)
 recap = recap[recap['nTrades'] > 50] # let's say we want strategies with at least 50 trades over the validation set
+print(recap)
 min, max = recap['Min'].iloc[0], recap['Max'].iloc[0]
 
 
