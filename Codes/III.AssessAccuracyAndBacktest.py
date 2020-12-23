@@ -40,6 +40,7 @@ def compute_earnings_loss(stoploss, takeprofit, fees):
     return(win, loss)
 
 def predict_and_backtest_bullish(df, df_final, model, stoploss, takeprofit, fees, plotting = True):
+    '''This functin takes the test set as input (in both shapes) + the model, computes predictions and  probabilities, then compute the earnings according to the fees. Finally it can plot the strategy'''
     # Compute predictions on testset
     df['preds'] = (clf.predict(df_final.iloc[:, :nPCs]) > 0.5)*1
     df['proba1'] = clf.predict(df_final.iloc[:, :nPCs])
@@ -121,7 +122,7 @@ validation_set['EarningsBullish'] = (validation_set['preds'] == validation_set['
 
 # Compute recapitulative table
 recap = table_recap(validation_set, stoploss, takeprofit, nPCs)
-recap.to_csv('./Results/Recapitulative_result_stoploss{}_takeprofit{}_{}PCs.csv'.format(stoploss, takeprofit, nPCs))
+recap.to_csv('./Results/Recapitulative_result_stoploss{}_takeprofit{}_{}PCs.csv'.format(stoploss, takeprofit, nPCs), index = False)
 
 # Pick the most profitable
 recap = recap.sort_values('ROI%', ascending = False)
