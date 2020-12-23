@@ -6,7 +6,7 @@ In this repository you can find : </br>
 1. The full report of the project, in <i>pdf</i>
 
 
-![Illustrative image](img/Cover_pic.PNG)
+![Illustrative image](img/Cover_Pic2.PNG)
 
 Just In Case... </br>
 BTC : 3PkoHLXmXsL8kBrFu7GQ8kpmzPBmNK6m8B </br>
