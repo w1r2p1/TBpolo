@@ -11,6 +11,7 @@
 :information_source: A series of articles written related to this pipeline : </br>
 1. I/IV : https://medium.com/analytics-vidhya/i-a-turnkey-python-code-for-creating-a-stock-forecasting-dataset-ad25f673f3b7
 1. II/IV : https://medium.com/analytics-vidhya/ii-forecasting-crypto-tendencies-with-deep-learning-in-python-5948909617db
+1. III/IV : https://sebcararo.medium.com/iii-creating-profitable-trading-strategies-8259d4b5e6ec
 
 Just In Case... </br>
 BTC : 3PkoHLXmXsL8kBrFu7GQ8kpmzPBmNK6m8B </br>
