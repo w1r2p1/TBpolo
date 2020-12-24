@@ -55,7 +55,7 @@ def predict_and_backtest_bullish(df, df_final, model, stoploss, takeprofit, fees
     if plotting:
         # Now plot our trading strategy
         plt.plot(pd.to_datetime(testset1['date']), np.cumsum(testset1['EarningsBullish']))
-        plt.title('Best model over the testset \n ROI = {} %'.format(100*np.mean(testset1['EarningsBullish'])))
+        plt.title('Approach over the test set \n ROI = {} %'.format(100*np.mean(testset1['EarningsBullish'])))
         plt.xlabel('Date')
         plt.xlabel('Cumulative Earnings')
         plt.show()
@@ -69,7 +69,7 @@ def predict_and_backtest_bullish(df, df_final, model, stoploss, takeprofit, fees
     return(testset1)
 
 #################### (b) Basic strategy : pick the best model and bet on bullish trends over the testset
-recap = pd.read_csv('Comparative_All_models_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit)).sort_values('Accuracy', ascending = False)
+recap = pd.read_csv('./Results/Comparative_All_models_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit)).sort_values('Accuracy', ascending = False)
 nPCs = recap['nPCs'].iloc[0]
 
 with open("./Models/DL_model_{}PC_stoploss{}_takeprofit{}.pkl".format(nPCs, stoploss, takeprofit), 'rb') as f:
@@ -109,16 +109,13 @@ def table_recap(df, stoploss, takeprofit, nPCs, columnA = 'proba1', columnB = 'E
 
 # (i) Identify best threshold
 # Load best model
-recap = pd.read_csv('Comparative_All_models_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit)).sort_values('Accuracy', ascending = False)
+recap = pd.read_csv('./Results/Comparative_All_models_stoploss{}_takeprofit{}.csv'.format(stoploss, takeprofit)).sort_values('Accuracy', ascending = False)
 nPCs = recap['nPCs'].iloc[0]
 with open("./Models/DL_model_{}PC_stoploss{}_takeprofit{}.pkl".format(nPCs, stoploss, takeprofit), 'rb') as f:
     clf = pk.load(f)
 
 # Compute predictions on validation_set
-validation_set['preds'] = (clf.predict(validation_set_final.iloc[:, :nPCs]) > 0.5)*1
-validation_set['proba1'] = clf.predict(validation_set_final.iloc[:, :nPCs])
-a = compute_earnings_loss(stoploss, takeprofit, fees)
-validation_set['EarningsBullish'] = (validation_set['preds'] == validation_set['result'])*a[0] + (validation_set['preds'] != validation_set['result'])*a[1]
+validation_set = predict_and_backtest_bullish(validation_set, validation_set_final, clf, stoploss, takeprofit, fees, plotting = False)
 
 # Compute recapitulative table
 recap = table_recap(validation_set, stoploss, takeprofit, nPCs)
@@ -138,7 +135,7 @@ testset2 = testset2[(testset2['proba1'] > min) & (testset2['proba1'] < max)].cop
 
 # Now plot our trading strategy
 plt.plot(pd.to_datetime(testset2['date']), np.cumsum(testset2['EarningsBullish']))
-plt.title('Best model over the testset \n ROI = {} %'.format(100*np.mean(testset2['EarningsBullish'])))
+plt.title('Approach n°2 over the test set \n ROI = {} %'.format(100*np.mean(testset2['EarningsBullish'])))
 plt.xlabel('Date')
 plt.xlabel('Cumulative Earnings')
 plt.show()
