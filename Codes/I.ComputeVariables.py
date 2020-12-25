@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 os.chdir("C:\\Users\\Utilisateur\\Desktop\\Crypto\\Data")
 df = pd.read_csv('./Data/USDT_BTC_Poloniex_20022015_21122020_7200.csv')
 df["date"] = pd.to_datetime(df["date"])
+df = df.sort_values(by = 'date')
 
 # Keep only 5 basic information + the date
 df = df[['close', 'date', 'high', 'low', 'open', 'volume']]
