@@ -153,4 +153,4 @@ def track_investment(pair, price, amount, stoploss, takeprofit):
             return(sell_asset(pair, amount, store = True)) # Sell if we reached the stoploss
         if polo.returnTicker()[pair]["highestBid"] > takeprofit_price :
             return(sell_asset(pair, amount, store = True)) # Sell if we reached the takeprofit
-        print('Latest price is', polo.returnTicker()[pair]['last'], 'stoploss_price = ', stoploss_price, 'takeprofit_price = ', takeprofit_price)
+        print('{} Latest price is'.format(datetime.now()), polo.returnTicker()[pair]['last'], 'stoploss_price = ', stoploss_price, 'takeprofit_price = ', takeprofit_price)
