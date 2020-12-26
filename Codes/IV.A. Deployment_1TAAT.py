@@ -47,7 +47,6 @@ api_secret = getkeys()[1]
 
 polo = Poloniex(api_key, api_secret)
 ######################### II - One trade at a time trading bot
-'''TO DO : find a way to collect the data asap'''
 while True:
     if int(time())%period == 90 :#Poloniex delivers the data ~90 seconds after the end of the candle
         print('It is {}'.format(datetime.now()), "... Let's trade {} ! ".format(pair))
