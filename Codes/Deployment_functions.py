@@ -1,3 +1,6 @@
+# Deployment functions
+
+
 ############################# Functions realted to variables computation
 def compute_sma(df, window, colname):
     '''Computes Simple Moving Average column on a dataframe'''
@@ -30,7 +33,6 @@ def compute_variables1(df):
     df["date"] = pd.to_datetime(df["date"])
     df['bodysize'] = df['close'] - df['open']
     df['shadowsize'] = df['high'] - df['low']
-    df['percentChange'] = df['close'].pct_change()
     for window in [3, 8, 21, 55, 144, 377]: # several Fibonacci numbers
         print(window)
         df = compute_sma(df, window, colname = 'sma_{}'.format(window))
@@ -38,6 +40,8 @@ def compute_variables1(df):
         df["Min_{}".format(window)] = df["low"].rolling(window).min()
         df["Max_{}".format(window)] = df["high"].rolling(window).max()
         df["volume_{}".format(window)] = df["volume"].rolling(window).mean()
+        df['percentChange_{}'.format(window)] = df['close'].pct_change(window = window)
+        df['RelativeSize_sma_{}'.format(window)] = df['close'] / df['sma_{}'.format(window)]
     # (a) Add modulo 10, 100, 1000, 500, 50
     df["Modulo_10"] = df["close"].copy() % 10
     df["Modulo_100"] = df["close"].copy() % 100
@@ -55,8 +59,8 @@ def compute_variables1(df):
 ############ Then the functions related to the Poloniex API
 def getkeys():
     # Fill in you own api key & secret
-    api_key = ''
-    api_secret = ''
+    api_key = '5P5XQOSI-4902E9JX-VEXRM0SX-KUJGK45G'
+    api_secret = '8461799f92f21997541672f2efcf0e45c73af19dcd5668e11d0f5697098a4d6f2257412d4993505b12e9c06946ce07d60374ea0ca4406c564d853ac33a859194'
     return(api_key, api_secret)
 
 def buy_asset(pair, amount, store = True):
@@ -154,3 +158,4 @@ def track_investment(pair, price, amount, stoploss, takeprofit):
         if polo.returnTicker()[pair]["highestBid"] > takeprofit_price :
             return(sell_asset(pair, amount, store = True)) # Sell if we reached the takeprofit
         print('{} Latest price is'.format(datetime.now()), polo.returnTicker()[pair]['last'], 'stoploss_price = ', stoploss_price, 'takeprofit_price = ', takeprofit_price)
+

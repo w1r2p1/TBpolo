@@ -72,15 +72,3 @@ while True:
             amount = np.sum(recap_trade1['AmountInCurrency'])
             recap_trade2 = track_investment(pair, price, amount, stoploss, takeprofit)
             print('We made a profit of {} $ with this trade!'.format(np.sum(recap_trade1['Total$']) - np.sum(recap_trade2['Total$Adjusted'])))
-
-
-
-
-
-
-
-
-
-
-
-
