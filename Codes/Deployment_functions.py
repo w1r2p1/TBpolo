@@ -33,6 +33,7 @@ def compute_variables1(df):
     df["date"] = pd.to_datetime(df["date"])
     df['bodysize'] = df['close'] - df['open']
     df['shadowsize'] = df['high'] - df['low']
+    df['percentChange'] = df['close'].pct_change()
     for window in [3, 8, 21, 55, 144, 377]: # several Fibonacci numbers
         print(window)
         df = compute_sma(df, window, colname = 'sma_{}'.format(window))
@@ -40,8 +41,6 @@ def compute_variables1(df):
         df["Min_{}".format(window)] = df["low"].rolling(window).min()
         df["Max_{}".format(window)] = df["high"].rolling(window).max()
         df["volume_{}".format(window)] = df["volume"].rolling(window).mean()
-        df['percentChange_{}'.format(window)] = df['close'].pct_change(periods = window)
-        df['RelativeSize_sma_{}'.format(window)] = df['close'] / df['sma_{}'.format(window)]
     # (a) Add modulo 10, 100, 1000, 500, 50
     df["Modulo_10"] = df["close"].copy() % 10
     df["Modulo_100"] = df["close"].copy() % 100
@@ -53,6 +52,7 @@ def compute_variables1(df):
     df["Day"] = df["date"].dt.day
     df.dropna(inplace=True)
     return(df)
+
 
 
 
