@@ -40,7 +40,7 @@ def compute_variables1(df):
         df["Min_{}".format(window)] = df["low"].rolling(window).min()
         df["Max_{}".format(window)] = df["high"].rolling(window).max()
         df["volume_{}".format(window)] = df["volume"].rolling(window).mean()
-        df['percentChange_{}'.format(window)] = df['close'].pct_change(window = window)
+        df['percentChange_{}'.format(window)] = df['close'].pct_change(periods = window)
         df['RelativeSize_sma_{}'.format(window)] = df['close'] / df['sma_{}'.format(window)]
     # (a) Add modulo 10, 100, 1000, 500, 50
     df["Modulo_10"] = df["close"].copy() % 10
