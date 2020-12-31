@@ -62,8 +62,8 @@ def compute_variables1(df):
 ############ Then the functions related to the Poloniex API
 def getkeys():
     # Fill in you own api key & secret
-    api_key = ''
-    api_secret = ''
+    api_key = '5P5XQOSI-4902E9JX-VEXRM0SX-KUJGK45G'
+    api_secret = '8461799f92f21997541672f2efcf0e45c73af19dcd5668e11d0f5697098a4d6f2257412d4993505b12e9c06946ce07d60374ea0ca4406c564d853ac33a859194'
     return(api_key, api_secret)
 
 def buy_asset(pair, amount, store = True):
@@ -161,4 +161,12 @@ def track_investment(pair, price, amount, stoploss, takeprofit):
         if polo.returnTicker()[pair]["highestBid"] > takeprofit_price :
             return(sell_asset(pair, amount, store = True)) # Sell if we reached the takeprofit
         print('{} Latest price is'.format(datetime.now()), polo.returnTicker()[pair]['last'], 'stoploss_price = ', stoploss_price, 'takeprofit_price = ', takeprofit_price)
+
+def sell_everything(currency):
+    pair = 'USDT_{}'.format(currency)
+    recap = sell_asset(pair = pair, amount = polo.returnBalances()[currency])
+    return(recap)
+
+
+
 

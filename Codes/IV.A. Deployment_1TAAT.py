@@ -7,6 +7,7 @@ import poloniex
 import os
 from time import time, sleep
 import pickle as pk
+import re
 
 from Deployment_functions import *
 
@@ -47,28 +48,33 @@ api_secret = getkeys()[1]
 
 polo = Poloniex(api_key, api_secret)
 ######################### II - One trade at a time trading bot
-while True:
-    if int(time())%period == 90 :#Poloniex delivers the data ~90 seconds after the end of the candle
-        print('It is {}'.format(datetime.now()), "... Let's trade {} ! ".format(pair))
-        # I- Request the data
-        raw = polo.returnChartData(pair, period = period, start = int(time()) - period*1000)
-        df = pd.DataFrame(raw).iloc[1:] # First row may contain useless data
-        df['date'] = pd.to_datetime(df["date"], unit='s')
-        df = df[['close', 'date', 'high', 'low', 'open', 'volume']] # only keep required data
+try:
+    while True:
+        if int(time())%period == 90 :#Poloniex delivers the data ~90 seconds after the end of the candle
+            print('It is {}'.format(datetime.now()), "... Let's trade {} ! ".format(pair))
+            # I- Request the data
+            raw = polo.returnChartData(pair, period = period, start = int(time()) - period*1000)
+            df = pd.DataFrame(raw).iloc[1:] # First row may contain useless data
+            df['date'] = pd.to_datetime(df["date"], unit='s')
+            df = df[['close', 'date', 'high', 'low', 'open', 'volume']] # only keep required data
 
-        # II - Compute predictions
-        df = compute_variables1(df)
-        df_final = pd.DataFrame(pca_scaler.transform(pca.transform(scale_fct.transform(df.drop('date', 1)))))
-        df_final = df_final.iloc[:, :nPCs]
+            # II - Compute predictions
+            df = compute_variables1(df)
+            df_final = pd.DataFrame(pca_scaler.transform(pca.transform(scale_fct.transform(df.drop('date', 1)))))
+            df_final = df_final.iloc[:, :nPCs]
 
-        df['preds'] = (clf.predict(df_final.iloc[:, :nPCs]) > 0.5)*1
-        df['proba1'] = clf.predict(df_final.iloc[:, :nPCs])
+            df['preds'] = (clf.predict(df_final.iloc[:, :nPCs]) > 0.5)*1
+            df['proba1'] = clf.predict(df_final.iloc[:, :nPCs])
 
-        # III - If criterion reached, we buy the asset and track the trade until we reach either the takeprofit or the stoploss
-        buy_signal = ((df['proba1'].iloc[-1] > min_threshold) & (df['proba1'].iloc[-1] < max_threshold))*1
-        if buy_signal:
-            recap_trade1 = buy_asset(pair = pair, amount = amount_dollar, store = True)
-            price = np.mean(recap_trade1['Rate'])
-            amount = np.sum(recap_trade1['AmountInCurrency'])
-            recap_trade2 = track_investment(pair, price, amount, stoploss, takeprofit)
-            print('We made a profit of {} $ with this trade!'.format(np.sum(recap_trade1['Total$']) - np.sum(recap_trade2['Total$Adjusted'])))
+            # III - If criterion reached, we buy the asset and track the trade until we reach either the takeprofit or the stoploss
+            buy_signal = ((df['proba1'].iloc[-1] > min_threshold) & (df['proba1'].iloc[-1] < max_threshold))*1
+            if buy_signal:
+                recap_trade1 = buy_asset(pair = pair, amount = amount_dollar, store = True)
+                price = np.mean(recap_trade1['Rate'])
+                amount = np.sum(recap_trade1['AmountInCurrency'])
+                recap_trade2 = track_investment(pair, price, amount, stoploss, takeprofit)
+                print('We made a profit of {} $ with this trade!'.format(np.sum(recap_trade1['Total$']) - np.sum(recap_trade2['Total$Adjusted'])))
+except:
+    # If the loop encountered an error, just sell everything
+    currency = re.split('_', pair)[1]
+    sell_everything(currency)
