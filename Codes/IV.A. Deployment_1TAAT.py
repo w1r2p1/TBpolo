@@ -50,13 +50,16 @@ polo = Poloniex(api_key, api_secret)
 ######################### II - One trade at a time trading bot
 try:
     while True:
-        if int(time())%period == 90 :#Poloniex delivers the data ~90 seconds after the end of the candle
+        if int(time())%period == 0 :
             print('It is {}'.format(datetime.now()), "... Let's trade {} ! ".format(pair))
             # I- Request the data
             raw = polo.returnChartData(pair, period = period, start = int(time()) - period*1000)
             df = pd.DataFrame(raw).iloc[1:] # First row may contain useless data
+            while (time() - df['date'].iloc[-1]) > period : #Check we've got the very recent candle : we stay here until Poloniex delivers it
+                print('Waiting for actualized data...');sleep(1)
             df['date'] = pd.to_datetime(df["date"], unit='s')
             df = df[['close', 'date', 'high', 'low', 'open', 'volume']] # only keep required data
+
 
             # II - Compute predictions
             df = compute_variables1(df)
