@@ -55,11 +55,11 @@ try:
             # I- Request the data
             raw = polo.returnChartData(pair, period = period, start = int(time()) - period*1000)
             df = pd.DataFrame(raw).iloc[1:] # First row may contain useless data
-            while (time() - df['date'].iloc[-1]) > period : #Check we've got the very recent candle : we stay here until Poloniex delivers it
+            df['date'] = pd.to_datetime(df["date"], unit='s')
+            while (pd.to_datetime(time(), unit='s') - df['date'].iloc[-1]).total_seconds() > period : #Check we've got the very recent candle : we stay here until Poloniex delivers it
                 print('Waiting for actualized data...');sleep(1)
                 raw = polo.returnChartData(pair, period = period, start = int(time()) - period*1000)
                 df = pd.DataFrame(raw).iloc[1:] # First row may contain useless data
-            df['date'] = pd.to_datetime(df["date"], unit='s')
             df = df[['close', 'date', 'high', 'low', 'open', 'volume']] # only keep required data
 
 
