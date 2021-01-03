@@ -16,6 +16,5 @@
 
 :information_source: Please report any bug/issue in the *issues* section or directly at sebcararo@hotmail.fr (Any feedback is really appreciated :speech_balloon: :+1:). A :star2: is also greatly appreciated :raised_hands:. </br>
 
-Just In Case... </br>
 BTC : 3PkoHLXmXsL8kBrFu7GQ8kpmzPBmNK6m8B </br>
 ETH : 0xFdbB5aF291cB7e711D62c1E4a8B58d0EbD423F9C </br>
