@@ -18,9 +18,9 @@ os.chdir("C:\\Users\\Utilisateur\\Desktop\\Crypto\\Trading_Bots\\USDT_BTC_900")
 ######################### 0 - Load necessary data, define constants
 # (0) Define constants used for the trading loop
 pair = 'USDT_BTC'
-period = 900 # In our example, we are building a 2 hours (7200 secs) trading bot
-stoploss = 1.5/100
-takeprofit = 3/100
+period = 7200 # In our example, we are building a 2 hours (7200 secs) trading bot
+stoploss = 5/100
+takeprofit = 10/100
 
 buy_signal = 0
 sell_signal = 0
